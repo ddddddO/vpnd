@@ -7,16 +7,17 @@ import (
 	"os/exec"
 	"strings"
 )
-
+/* debug用
 func TmpCommand() {
 	log.Println("-TMP COMMAND START-")
-	tcmd := exec.Command("bash", "-c", "touch /home/pi/Vpnclient/test.txt")
+	tcmd := exec.Command("bash", "-c", "ifconfig vpn_myipse-lan >> /home/pi/Vpnclient/ifconfig.txt")
 	if err := tcmd.Start(); err != nil {
 		log.Fatalf("miss: %v", err)
 	}
 	tcmd.Wait()
 	log.Println("-TMP COMMAND END-")
 }
+*/
 
 // TODO:1コマンド複数チェック・複数reコマンドjsonで設定できないか
 // FIXME:json optionいらなくなるかも
@@ -41,6 +42,7 @@ func Command(c *Config) {
 		)
 		for sc.Scan() {
 			s := sc.Text()
+			fmt.Println(s)
 			if strings.Contains(s, v.Check) {
 				commandFlg = true
 				break
@@ -139,21 +141,25 @@ func VPNCommand() {
 				continue
 			}
 	
-			// AccountConnectコマンド実行
+			// AccountConnect or AccountDisconnectコマンド実行(両コマンド結果文字列は、"コマンドは正常に終了しました。")
 			if strings.Contains(s, `VPN Client "localhost" に接続しました。`) {
 				vpnReStdin.Write([]byte(fmt.Sprintf("AccountConnect %s\n", "MYIPSE")))
 				sessionFlg = true
 				continue
 			}
-	/*
-			if strings.Contains(s, "セッション接続状態") {
-				if strings.Contains(s, "接続完了 (セッション確立済み)") {
+			disconnectFlg := false
+			if strings.Contains(s, "指定された接続設定は現在接続中です。") {
+				vpnReStdin.Write([]byte(fmt.Sprintf("AccountDisconnect %s\n", "MYIPSE")))
+				disconnectFlg = true
+				continue
+			}
+
+			if strings.Contains(s, "コマンドは正常に終了しました。") {
+				if disconnectFlg {
+					vpnReStdin.Write([]byte(fmt.Sprintf("AccountConnect %s\n", "MYIPSE")))
 					sessionFlg = true
 					continue
 				}
-			}
-	*/
-			if strings.Contains(s, "コマンドは正常に終了しました。") {
 				vpnReStdin.Write([]byte("QUIT\n"))
 			}
 		}
@@ -161,7 +167,7 @@ func VPNCommand() {
 		log.Println("-VPN ReCOMMAND END-")
 		
 		if !sessionFlg {
-			log.Fatalln("そのとき考える")
+			log.Fatalln("wifiルータ再起動かかった時にここ入る。そのとき考える")
 		}
 	}
 }

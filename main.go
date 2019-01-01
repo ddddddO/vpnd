@@ -23,6 +23,6 @@ func main() {
 	c.Unmarshal(config)
 
 	lib.VPNCommand()
-	lib.TmpCommand()
+	//lib.TmpCommand()
 	lib.Command(c)	
 }
