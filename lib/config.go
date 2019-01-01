@@ -26,8 +26,8 @@ func NewConfig() *Config {
 	return &Config{}
 }
 
-func (c *Config) Unmarshal() {
-	raw, err := ioutil.ReadFile("./config.json")
+func (c *Config) Unmarshal(path string) {
+	raw, err := ioutil.ReadFile(path)
 	if err != nil {
 		log.Fatalf("failed to read file %s: %v\n", "config.json", err)
 	}
