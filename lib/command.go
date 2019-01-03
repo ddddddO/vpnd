@@ -7,6 +7,7 @@ import (
 	"os/exec"
 	"strings"
 )
+
 /* debug用
 func TmpCommand() {
 	log.Println("-TMP COMMAND START-")
@@ -35,14 +36,13 @@ func Command(c *Config) {
 		if err := cmd.Start(); err != nil {
 			log.Fatalf("failed to command '%s': %v\n", v.Command, err)
 		}
-	
+
 		var (
-			sc       = bufio.NewScanner(stdout)
+			sc         = bufio.NewScanner(stdout)
 			commandFlg = false
 		)
 		for sc.Scan() {
 			s := sc.Text()
-			fmt.Println(s)
 			if strings.Contains(s, v.Check) {
 				commandFlg = true
 				break
@@ -55,7 +55,7 @@ func Command(c *Config) {
 			log.Printf("-%s ReCOMMAND START-\n", v.ReCommandConfig.ReCommand)
 
 			var (
-				reCmd       = exec.Command("bash", "-c", v.ReCommandConfig.ReCommand)
+				reCmd = exec.Command("bash", "-c", v.ReCommandConfig.ReCommand)
 				//reStdout, _ = cmd.StdoutPipe()
 				//reStdin, _ = cmd.StdinPipe()
 				//reStderr, _ = cmd.StderrPipe()
@@ -79,7 +79,7 @@ func VPNCommand() {
 	vpnStdout, _ := vpnCmd.StdoutPipe()
 	vpnStdin, _ := vpnCmd.StdinPipe()
 	if err := vpnCmd.Start(); err != nil {
-		log.Fatalf("failed to command '%s': %v\n", "vpncmd", err)	
+		log.Fatalf("failed to command '%s': %v\n", "vpncmd", err)
 	}
 
 	sessionFlg := false
@@ -98,7 +98,6 @@ func VPNCommand() {
 		}
 
 		// AccountStatusGetコマンド実行
-		// ここちょっと考えないといけない・・？
 		if strings.Contains(s, `VPN Client "localhost" に接続しました。`) {
 			vpnStdin.Write([]byte(fmt.Sprintf("AccountStatusGet %s\n", "MYIPSE")))
 			continue
@@ -122,11 +121,11 @@ func VPNCommand() {
 	if !sessionFlg {
 		vpnReCmd := exec.Command("/home/pi/Vpnclient/vpnclient/vpncmd")
 		vpnReStdout, _ := vpnReCmd.StdoutPipe()
-		vpnReStdin, _ := vpnReCmd.StdinPipe()	
+		vpnReStdin, _ := vpnReCmd.StdinPipe()
 		if err := vpnReCmd.Start(); err != nil {
-			log.Fatalf("failed to recommand '%s': %v\n", "vpncmd", err)	
+			log.Fatalf("failed to recommand '%s': %v\n", "vpncmd", err)
 		}
-	
+
 		vpnReSc := bufio.NewScanner(vpnReStdout)
 		log.Println("-VPN ReCOMMAND START-")
 		for vpnReSc.Scan() {
@@ -135,12 +134,12 @@ func VPNCommand() {
 				vpnReStdin.Write([]byte("2\n"))
 				continue
 			}
-	
+
 			if strings.Contains(s, "何も入力せずに Enter を押すと、localhost (このコンピュータ) に接続します。") {
 				vpnReStdin.Write([]byte("\n"))
 				continue
 			}
-	
+
 			// AccountConnect or AccountDisconnectコマンド実行(両コマンド結果文字列は、"コマンドは正常に終了しました。")
 			if strings.Contains(s, `VPN Client "localhost" に接続しました。`) {
 				vpnReStdin.Write([]byte(fmt.Sprintf("AccountConnect %s\n", "MYIPSE")))
@@ -165,9 +164,9 @@ func VPNCommand() {
 		}
 		vpnReCmd.Wait()
 		log.Println("-VPN ReCOMMAND END-")
-		
+
 		if !sessionFlg {
-			log.Fatalln("wifiルータ再起動かかった時にここ入る。そのとき考える")
+			log.Fatalln("そのとき考える")
 		}
 	}
 }

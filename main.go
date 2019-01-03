@@ -22,7 +22,7 @@ func main() {
 	c := lib.NewConfig()
 	c.Unmarshal(config)
 
+	//lib.TmpCommand() // debug用
 	lib.VPNCommand()
-	//lib.TmpCommand()
-	lib.Command(c)	
+	lib.Command(c)
 }
