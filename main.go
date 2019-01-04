@@ -2,12 +2,14 @@ package main
 
 import (
 	"flag"
+	"time"
 
 	"github.com/ddddddO/vpnd/lib"
 )
 
 var (
-	config string
+	config   string
+	interval time.Duration
 )
 
 /*
@@ -17,12 +19,22 @@ var (
 */
 func main() {
 	flag.StringVar(&config, "config", "./config.json", "config file path")
+	flag.DurationVar(&interval, "interval", time.Minute*5, "proc interval")
 	flag.Parse()
 
+	t := time.NewTicker(interval)
 	c := lib.NewConfig()
 	c.Unmarshal(config)
 
 	//lib.TmpCommand() // debug用
 	lib.VPNCommand()
 	lib.Command(c)
+
+	for {
+		select {
+		case <-t.C:
+			lib.VPNCommand()
+			lib.Command(c)
+		}
+	}
 }
