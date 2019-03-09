@@ -35,19 +35,19 @@ func Command(c *Config) {
 
 		var (
 			sc         = bufio.NewScanner(stdout)
-			commandFlg = false
+			shouldReCommand = true
 		)
 		for sc.Scan() {
 			s := sc.Text()
 			if strings.Contains(s, v.Check) {
-				commandFlg = true
+				shouldReCommand = false
 				break
 			}
 		}
 		cmd.Wait()
 		log.Printf("-%s COMMAND END-\n", v.Command)
 
-		if !commandFlg {
+		if shouldReCommand {
 			log.Printf("-%s ReCOMMAND START-\n", v.ReCommandConfig.ReCommand)
 
 			
@@ -74,7 +74,7 @@ func VPNCommand() {
 		log.Fatalf("failed to command '%s': %v\n", "vpncmd", err)
 	}
 
-	sessionFlg := false
+	isSession := false
 	vpnSc := bufio.NewScanner(vpnStdout)
 	log.Println("-VPN COMMAND START-")
 	for vpnSc.Scan() {
@@ -96,7 +96,7 @@ func VPNCommand() {
 
 		if strings.Contains(s, "セッション接続状態") {
 			if strings.Contains(s, "接続完了 (セッション確立済み)") {
-				sessionFlg = true
+				isSession = true
 				continue
 			}
 		}
@@ -109,7 +109,7 @@ func VPNCommand() {
 	log.Println("-VPN COMMAND END-")
 
 	// 再vpncmd実行で、AccountConnectコマンド実行する
-	if !sessionFlg {
+	if !isSession {
 		vpnReCmd := exec.Command("/home/pi/Vpnclient/vpnclient/vpncmd")
 		vpnReStdout, _ := vpnReCmd.StdoutPipe()
 		vpnReStdin, _ := vpnReCmd.StdinPipe()
@@ -133,20 +133,20 @@ func VPNCommand() {
 
 			if strings.Contains(s, `VPN Client "localhost" に接続しました。`) {
 				vpnReStdin.Write([]byte(fmt.Sprintf("AccountConnect %s\n", "MYIPSE")))
-				sessionFlg = true
+				isSession = true
 				continue
 			}
-			disconnectFlg := false
+			shouldDisconnect := false
 			if strings.Contains(s, "指定された接続設定は現在接続中です。") {
 				vpnReStdin.Write([]byte(fmt.Sprintf("AccountDisconnect %s\n", "MYIPSE")))
-				disconnectFlg = true
+				shouldDisconnect = true
 				continue
 			}
 
 			if strings.Contains(s, "コマンドは正常に終了しました。") {
-				if disconnectFlg {
+				if shouldDisconnect {
 					vpnReStdin.Write([]byte(fmt.Sprintf("AccountConnect %s\n", "MYIPSE")))
-					sessionFlg = true
+					isSession = true
 					continue
 				}
 				vpnReStdin.Write([]byte("QUIT\n"))
@@ -155,7 +155,7 @@ func VPNCommand() {
 		vpnReCmd.Wait()
 		log.Println("-VPN ReCOMMAND END-")
 
-		if !sessionFlg {
+		if !isSession {
 			log.Fatalln("そのとき考える")
 		}
 	}
