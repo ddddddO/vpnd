@@ -78,34 +78,31 @@ func VPNCommand() {
 	log.Println("-VPN COMMAND START-")
 	for vpnSc.Scan() {
 		s := vpnSc.Text()
-		if strings.Contains(s, "3. VPN Tools コマンドの使用 (証明書作成や通信速度測定)") {
+		switch {
+		case strings.Contains(s, "3. VPN Tools コマンドの使用 (証明書作成や通信速度測定)"):
 			vpnStdin.Write([]byte("2\n"))
 			continue
-		}
 
-		if strings.Contains(s, "何も入力せずに Enter を押すと、localhost (このコンピュータ) に接続します。") {
+		case strings.Contains(s, "何も入力せずに Enter を押すと、localhost (このコンピュータ) に接続します。"):
 			vpnStdin.Write([]byte("\n"))
 			continue
-		}
 
-		if strings.Contains(s, `VPN Client "localhost" に接続しました。`) {
+		case strings.Contains(s, `VPN Client "localhost" に接続しました。`):
 			vpnStdin.Write([]byte(fmt.Sprintf("AccountStatusGet %s\n", "MYIPSE")))
 			continue
-		}
 
-		if strings.Contains(s, "指定された接続設定は接続されていません。") {
+		case strings.Contains(s, "指定された接続設定は接続されていません。"):
 			vpnStdin.Write([]byte(fmt.Sprintf("AccountConnect %s\n", "MYIPSE")))
 			continue
-		} else if strings.Contains(s, "セッション接続状態") && strings.Contains(s, "接続完了 (セッション確立済み)") {
-			vpnStdin.Write([]byte("QUIT\n"))
-			break
-		} else if strings.Contains(s, "指定された接続設定は現在接続中です。") {
+		case strings.Contains(s, "指定された接続設定は現在接続中です。"):
 			vpnStdin.Write([]byte(fmt.Sprintf("AccountDisconnect %s\n", "MYIPSE")))
 			shouldReConnect = true
 			continue
-		}
+		case strings.Contains(s, "セッション接続状態") && strings.Contains(s, "接続完了 (セッション確立済み)"):
+			vpnStdin.Write([]byte("QUIT\n"))
+			break
 
-		if strings.Contains(s, "コマンドは正常に終了しました。") {
+		case strings.Contains(s, "コマンドは正常に終了しました。"):
 			if shouldReConnect {
 				vpnStdin.Write([]byte(fmt.Sprintf("AccountConnect %s\n", "MYIPSE")))
 				shouldReConnect = false
