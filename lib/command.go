@@ -21,8 +21,6 @@ func TmpCommand() {
 */
 
 // TODO:1コマンド複数チェック・複数reコマンドjsonで設定できないか
-// FIXME:json optionいらなくなるかも
-// NOTE:exec.Command("bash", "-c", "コマンド")は、exec.Run×/exec.Start〇なものがあるっぽい。
 func Command(c *Config) {
 	for _, v := range c.Commands {
 		log.Printf("-%s COMMAND START-\n", v.Command)
@@ -30,8 +28,6 @@ func Command(c *Config) {
 		var (
 			cmd       = exec.Command("bash", "-c", v.Command)
 			stdout, _ = cmd.StdoutPipe()
-			//stdin, _ = cmd.StdinPipe()
-			//stderr, _ = cmd.StderrPipe()
 		)
 		if err := cmd.Start(); err != nil {
 			log.Fatalf("failed to command '%s': %v\n", v.Command, err)
@@ -54,12 +50,8 @@ func Command(c *Config) {
 		if !commandFlg {
 			log.Printf("-%s ReCOMMAND START-\n", v.ReCommandConfig.ReCommand)
 
-			var (
-				reCmd = exec.Command("bash", "-c", v.ReCommandConfig.ReCommand)
-				//reStdout, _ = cmd.StdoutPipe()
-				//reStdin, _ = cmd.StdinPipe()
-				//reStderr, _ = cmd.StderrPipe()
-			)
+			
+			reCmd := exec.Command("bash", "-c", v.ReCommandConfig.ReCommand)			
 			if err := reCmd.Start(); err != nil {
 				log.Fatalf("failed to recommand '%s': %v\n", v.ReCommandConfig.ReCommand, err)
 			}
@@ -97,7 +89,6 @@ func VPNCommand() {
 			continue
 		}
 
-		// AccountStatusGetコマンド実行
 		if strings.Contains(s, `VPN Client "localhost" に接続しました。`) {
 			vpnStdin.Write([]byte(fmt.Sprintf("AccountStatusGet %s\n", "MYIPSE")))
 			continue
@@ -140,7 +131,6 @@ func VPNCommand() {
 				continue
 			}
 
-			// AccountConnect or AccountDisconnectコマンド実行(両コマンド結果文字列は、"コマンドは正常に終了しました。")
 			if strings.Contains(s, `VPN Client "localhost" に接続しました。`) {
 				vpnReStdin.Write([]byte(fmt.Sprintf("AccountConnect %s\n", "MYIPSE")))
 				sessionFlg = true
