@@ -39,7 +39,7 @@ func Command(c *Config) {
 		)
 		for sc.Scan() {
 			s := sc.Text()
-			if strings.Contains(s, v.Check) {
+			if strings.Contains(s, v.Check) || v.Check == "" {
 				shouldReCommand = false
 				break
 			}
@@ -50,7 +50,6 @@ func Command(c *Config) {
 		if shouldReCommand {
 			log.Printf("-%s ReCOMMAND START-\n", v.ReCommandConfig.ReCommand)
 
-			
 			reCmd := exec.Command("bash", "-c", v.ReCommandConfig.ReCommand)			
 			if err := reCmd.Start(); err != nil {
 				log.Fatalf("failed to recommand '%s': %v\n", v.ReCommandConfig.ReCommand, err)
@@ -74,7 +73,7 @@ func VPNCommand() {
 		log.Fatalf("failed to command '%s': %v\n", "vpncmd", err)
 	}
 
-	isSession := false
+	shouldReConnect := false
 	vpnSc := bufio.NewScanner(vpnStdout)
 	log.Println("-VPN COMMAND START-")
 	for vpnSc.Scan() {
@@ -94,69 +93,28 @@ func VPNCommand() {
 			continue
 		}
 
-		if strings.Contains(s, "セッション接続状態") {
-			if strings.Contains(s, "接続完了 (セッション確立済み)") {
-				isSession = true
-				continue
-			}
+		if strings.Contains(s, "指定された接続設定は接続されていません。") {
+			vpnStdin.Write([]byte(fmt.Sprintf("AccountConnect %s\n", "MYIPSE")))
+			continue
+		} else if strings.Contains(s, "セッション接続状態") && strings.Contains(s, "接続完了 (セッション確立済み)") {
+			vpnStdin.Write([]byte("QUIT\n"))
+			break
+		} else if strings.Contains(s, "指定された接続設定は現在接続中です。") {
+			vpnStdin.Write([]byte(fmt.Sprintf("AccountDisconnect %s\n", "MYIPSE")))
+			shouldReConnect = true
+			continue
 		}
 
-		if strings.Contains(s, "コマンドは正常に終了しました。") || strings.Contains(s, "指定された接続設定は接続されていません。") {
+		if strings.Contains(s, "コマンドは正常に終了しました。") {
+			if shouldReConnect {
+				vpnStdin.Write([]byte(fmt.Sprintf("AccountConnect %s\n", "MYIPSE")))
+				shouldReConnect = false
+				continue
+			}
 			vpnStdin.Write([]byte("QUIT\n"))
+			break
 		}
 	}
 	vpnCmd.Wait()
 	log.Println("-VPN COMMAND END-")
-
-	// 再vpncmd実行で、AccountConnectコマンド実行する
-	if !isSession {
-		vpnReCmd := exec.Command("/home/pi/Vpnclient/vpnclient/vpncmd")
-		vpnReStdout, _ := vpnReCmd.StdoutPipe()
-		vpnReStdin, _ := vpnReCmd.StdinPipe()
-		if err := vpnReCmd.Start(); err != nil {
-			log.Fatalf("failed to recommand '%s': %v\n", "vpncmd", err)
-		}
-
-		vpnReSc := bufio.NewScanner(vpnReStdout)
-		log.Println("-VPN ReCOMMAND START-")
-		for vpnReSc.Scan() {
-			s := vpnReSc.Text()
-			if strings.Contains(s, "3. VPN Tools コマンドの使用 (証明書作成や通信速度測定)") {
-				vpnReStdin.Write([]byte("2\n"))
-				continue
-			}
-
-			if strings.Contains(s, "何も入力せずに Enter を押すと、localhost (このコンピュータ) に接続します。") {
-				vpnReStdin.Write([]byte("\n"))
-				continue
-			}
-
-			if strings.Contains(s, `VPN Client "localhost" に接続しました。`) {
-				vpnReStdin.Write([]byte(fmt.Sprintf("AccountConnect %s\n", "MYIPSE")))
-				isSession = true
-				continue
-			}
-			shouldDisconnect := false
-			if strings.Contains(s, "指定された接続設定は現在接続中です。") {
-				vpnReStdin.Write([]byte(fmt.Sprintf("AccountDisconnect %s\n", "MYIPSE")))
-				shouldDisconnect = true
-				continue
-			}
-
-			if strings.Contains(s, "コマンドは正常に終了しました。") {
-				if shouldDisconnect {
-					vpnReStdin.Write([]byte(fmt.Sprintf("AccountConnect %s\n", "MYIPSE")))
-					isSession = true
-					continue
-				}
-				vpnReStdin.Write([]byte("QUIT\n"))
-			}
-		}
-		vpnReCmd.Wait()
-		log.Println("-VPN ReCOMMAND END-")
-
-		if !isSession {
-			log.Fatalln("そのとき考える")
-		}
-	}
 }
